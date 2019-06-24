@@ -1,0 +1,12 @@
+Good catches vs. bad catches
+Level objectives
+Game over
+
+
+Create levels
+
+Fish wander
+
+# Bugs
+Lines after fish go offscreen
+Circle heads are on the wrong side when avoiding lure
