@@ -32,7 +32,7 @@ local fish = {
                 if self.target.colour == self.colour then
                     matches += 1
                 end
-                if abs(self.target.size - self.size) <= 2 then
+                if self.size - self.target.size >= 0 and self.size - self.target.size <= 2 then
                     matches += 1
                 end
             end
@@ -50,9 +50,9 @@ local fish = {
                 if interest == 0 then
                     speed *= -1.0
                 elseif interest == 1 then
-                    speed *= 0.5
+                    speed *= 0
                 elseif interest == 2 then
-                    speed *= 1.5
+                    speed *= 1
                 end
 
                 local new_pos = self.v2_pos(self) + self.dir * speed
