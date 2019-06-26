@@ -98,7 +98,13 @@ end
 
 function check_for_caught()
     for f in all(fishes) do
-        if f.lure_dist(f, active_lure) < active_lure.radius(active_lure) then
+        local lure_dist = f.lure_dist(f, active_lure)
+        if lure_dist < 0 then
+            -- Negative distance implies int overflow, so clearly the distance is too far anyway. Destroy the fish and replace with a new one.
+            remove_fish(f)
+            should_add_fish()
+        elseif lure_dist < active_lure.radius(active_lure) then
+            log.syslog("Caught: "..f.lure_dist(f, active_lure).." r: "..active_lure.radius(active_lure))
             remove_fish(f)
 
             if f.colour == 7 then
@@ -140,6 +146,8 @@ function _init()
         fish_size = 1 + flr(rnd(8))
         add_fish(active_lure, 8, fish_size, false)
     end
+
+    add_fish(active_lure, 7, 8, false)
 end
 
 function _update()

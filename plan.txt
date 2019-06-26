@@ -1,8 +1,7 @@
 Fish wander on uninterest
 
+Log message when v2.mag is negative due to overflow
 Create levels and objectives?
 
 # Bugs
-Fish offscreen reset in screen center and get caught?
-Fish offscreen draw lines through center
 Circle heads are on the wrong side when avoiding lure
