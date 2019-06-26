@@ -9,6 +9,8 @@ local lure = {
 
         renderer.attach(l, 0)
         l.renderable.render = function(r, x, y)
+            line(62, 0, x, y, 12)
+
             local go = r.game_obj
             circfill(x, y, go.radius(go), go.colour)
         end
