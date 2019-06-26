@@ -278,7 +278,6 @@ return renderer
 end
 package._c["fish"]=function()
 game_obj = require('game_obj')
-log = require('log')
 renderer = require('renderer')
 v2 = require('v2')
 
@@ -291,6 +290,12 @@ local fish = {
         f.length = size
         f.size = size
         f.colour = colour
+
+        if f.size >= 7 then
+            f.speed *= 0.75
+        elseif f.size < 3 then
+            f.speed *= 1.25
+        end
 
         renderer.attach(f, 0)
         f.renderable.render = function(r, x, y)
