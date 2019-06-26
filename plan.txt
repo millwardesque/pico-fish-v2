@@ -1,11 +1,6 @@
-Reset score on bad catch
-Track longest score streak
-Final score == best score at time up
-
+Figure out what to do with red lure
 Fish wander on uninterest
-
 Log message when v2.mag is negative due to overflow
-
 Create levels and objectives?
 
 # Bugs

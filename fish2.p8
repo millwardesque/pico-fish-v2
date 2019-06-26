@@ -406,6 +406,8 @@ available_lures = nil
 
 good_catch_count = nil
 bad_catch_count = nil
+longest_streak = nil
+current_streak = nil
 
 scene = nil
 state = "ingame"
@@ -490,13 +492,17 @@ function check_for_caught()
             remove_fish(f)
             should_add_fish()
         elseif lure_dist < active_lure.radius(active_lure) then
-            log.syslog("Caught: "..f.lure_dist(f, active_lure).." r: "..active_lure.radius(active_lure))
             remove_fish(f)
 
             if f.colour == 7 then
                 good_catch_count += 1
+                current_streak +=1
+                if current_streak > longest_streak then
+                    longest_streak = current_streak
+                end
             else
                 bad_catch_count += 1
+                current_streak = 0
             end
         end
     end
@@ -519,6 +525,8 @@ function _init()
 
     good_catch_count = 0
     bad_catch_count = 0
+    longest_streak = 0
+    current_streak = 0
 
     fishes = {}
 
@@ -574,13 +582,14 @@ function _update()
 
         -- Debug
         --log.log("Mem: "..(stat(0)/2048.0).."% CPU: "..(stat(1)/1.0).."%")
+        log.log("streak: "..current_streak.. " (best: "..longest_streak..")")
         log.log("fish: "..#fishes.." caught: "..(good_catch_count + bad_catch_count).." ("..good_catch_count.." vs. "..bad_catch_count..")")
         log.log("lures: "..#available_lures.." active: "..active_lure_index)
         log.log("time: "..flr(level_timer / stat(8)))
     elseif state == "gameover" then
         scene = {}
         log.log("game over!")
-        log.log("score: "..max(0, good_catch_count - bad_catch_count))
+        log.log("score: "..longest_streak)
         log.log("press 4 to try again")
 
         if btnp(4) then
