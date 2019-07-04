@@ -1,9 +1,6 @@
-Fix bug 1 next!
-
-Fish wander on uninterest
+Fish wander on uninterest instead of slow moving
 Log message when v2.mag is negative due to overflow
 Create levels and objectives?
 
 # Bugs
-Min-dist calculation is wrong
 Circle heads are on the wrong side when avoiding lure

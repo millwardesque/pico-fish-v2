@@ -434,8 +434,13 @@ function add_fish(target, colour1, colour2, size, is_offscreen)
         zone_size = 20
     end
 
-    local x = 64 + min_dist + flr(rnd(zone_size)) - zone_size / 2
-    local y = 64 + min_dist + flr(rnd(zone_size)) - zone_size / 2
+    local angle = rnd(1.0)
+    local dist = min_dist + flr(rnd(zone_size / 2.0))
+    local x = 64 + dist * cos(angle)
+    local y = 64 + dist * sin(angle)
+
+    -- local x = 64 + min_dist + flr(rnd(zone_size)) - zone_size / 2
+    -- #local y = 64 + min_dist + flr(rnd(zone_size)) - zone_size / 2
 
     local new_fish = fish.mk('f'..#fishes, x, y, colour1, colour2, size)
     new_fish.target = target
