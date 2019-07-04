@@ -285,17 +285,18 @@ local fish = {
     mk = function(name, x, y, colour1, colour2, size)
         local f = game_obj.mk(name, 'fish', x, y)
         f.target = nil
-        f.dir = v2.norm(v2.mk(x + 1, y))
-        f.speed = 0.5 * (0.25 + rnd(1))
+        f.dir_to_lure = v2.norm(v2.mk(x + 1, y))
+        f.max_speed = 0.5 * (0.25 + rnd(1))
+        f.speed = 0
         f.length = size
         f.size = size
         f.colour1 = colour1
         f.colour2 = colour2
 
         if f.size >= 7 then
-            f.speed *= 0.75
+            f.max_speed *= 0.75
         elseif f.size < 3 then
-            f.speed *= 1.25
+            f.max_speed *= 1.25
         end
 
         renderer.attach(f, 0)
@@ -306,8 +307,16 @@ local fish = {
                 -- Do nothing. This will get cleaned on the next update cycle.
                 return
             else
-                circfill(x, y, max(1, go.size / 2.0), go.colour1)
-                line(x - go.dir.x * go.length, y - go.dir.y * go.length, x, y, go.colour2)
+                local tail = v2.mk(x - go.dir_to_lure.x * go.length, y - go.dir_to_lure.y * go.length)
+                local head = v2.mk(x, y)
+
+                line(tail.x, tail.y, head.x, head.y, go.colour2)
+
+                if go.speed >= 0 then
+                    circfill(head.x, head.y, max(1, go.size / 2.0), go.colour1)
+                else
+                    circfill(tail.x, tail.y, max(1, go.size / 2.0), go.colour1)
+                end
             end
         end
 
@@ -337,21 +346,21 @@ local fish = {
             if self.target ~= nil then
                 local d = self.target.v2_pos(self.target) - self.v2_pos(self)
                 local dist = v2.mag(d)
-                self.dir = v2.norm(d)
+                self.dir_to_lure = v2.norm(d)
 
-                local speed = self.speed
+                self.speed = self.max_speed
                 local interest = self.interest(self)
                 if interest == 0 then
-                    speed *= -1.0
+                    self.speed *= -1.0
                 elseif interest == 1 then
-                    speed *= 0.0
+                    self.speed *= 0.0
                 elseif interest == 2 then
-                    speed *= 0.6
+                    self.speed *= 0.6
                 elseif interest == 3 then
-                    speed *= 1.0
+                    self.speed *= 1.0
                 end
 
-                local new_pos = self.v2_pos(self) + self.dir * speed
+                local new_pos = self.v2_pos(self) + self.dir_to_lure * self.speed
                 self.x = new_pos.x
                 self.y = new_pos.y
             end
