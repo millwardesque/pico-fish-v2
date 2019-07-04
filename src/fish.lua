@@ -43,7 +43,7 @@ local fish = {
                 matches = 0
             else
                 if self.target.colour == self.colour1 then
-                    matches += 2
+                    matches += 1
                 elseif self.target.colour == self.colour2 then
                     matches += 1
                 end

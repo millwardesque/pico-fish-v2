@@ -322,7 +322,7 @@ local fish = {
                 matches = 0
             else
                 if self.target.colour == self.colour1 then
-                    matches += 2
+                    matches += 1
                 elseif self.target.colour == self.colour2 then
                     matches += 1
                 end
@@ -438,9 +438,6 @@ function add_fish(target, colour1, colour2, size, is_offscreen)
     local dist = min_dist + flr(rnd(zone_size / 2.0))
     local x = 64 + dist * cos(angle)
     local y = 64 + dist * sin(angle)
-
-    -- local x = 64 + min_dist + flr(rnd(zone_size)) - zone_size / 2
-    -- #local y = 64 + min_dist + flr(rnd(zone_size)) - zone_size / 2
 
     local new_fish = fish.mk('f'..#fishes, x, y, colour1, colour2, size)
     new_fish.target = target
