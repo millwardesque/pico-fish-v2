@@ -6,6 +6,7 @@ v2 = require('v2')
 
 fish = require('fish')
 lure = require('lure')
+utils = require('utils')
 
 cam = nil
 
@@ -26,7 +27,7 @@ current_streak = nil
 scene = nil
 state = "ingame"
 
-function add_fish(target, colour1, colour2, size, is_offscreen)
+function add_fish(lure, colour1, colour2, size, is_offscreen)
     local min_dist = 40
     local zone_size = 128 - min_dist
 
@@ -35,13 +36,9 @@ function add_fish(target, colour1, colour2, size, is_offscreen)
         zone_size = 20
     end
 
-    local angle = rnd(1.0)
-    local dist = min_dist + flr(rnd(zone_size / 2.0))
-    local x = 64 + dist * cos(angle)
-    local y = 64 + dist * sin(angle)
-
-    local new_fish = fish.mk('f'..#fishes, x, y, colour1, colour2, size)
-    new_fish.target = target
+    local pos = utils.rnd_v2_near(64, 64, min_dist, zone_size)
+    local new_fish = fish.mk('f'..#fishes, pos.x, pos.y, colour1, colour2, size)
+    new_fish.lure = lure
     add(fishes, new_fish)
     add(scene, new_fish)
 end
@@ -75,7 +72,7 @@ function set_active_lure(lure)
     add(scene, active_lure)
 
     for f in all(fishes) do
-        f.target = active_lure
+        f.lure = active_lure
     end
 end
 
@@ -108,12 +105,11 @@ end
 
 function check_for_caught()
     for f in all(fishes) do
-        local lure_dist = f.lure_dist(f, active_lure)
-        if lure_dist < 0 then
-            -- Negative distance implies int overflow, so clearly the distance is too far anyway. Destroy the fish and replace with a new one.
+        local has_collided = utils.circle_col(f.v2_pos(f), f.size / 2.0, active_lure.v2_pos(active_lure), active_lure.size / 2.0)
+        if has_collided == nil then
             remove_fish(f)
             should_add_fish()
-        elseif lure_dist < active_lure.radius(active_lure) then
+        elseif has_collided then
             remove_fish(f)
 
             if f.colour1 == active_lure.colour then
@@ -135,7 +131,7 @@ function _init()
     state = "ingame"
     scene = {}
 
-    level_timer = 15 * stat(8) -- secs * target FPS
+    level_timer = 30 * stat(8) -- secs * target FPS
 
     cam = game_cam.mk("main-cam", 0, 0, 128, 128, 16, 16)
     add(scene, cam)
@@ -154,7 +150,7 @@ function _init()
     fishes = {}
 
     local fish_size = nil
-    for i = 1,4 do
+    for i = 1,3 do
         fish_size = 1 + flr(rnd(8))
         add_fish(active_lure, 7, 8, fish_size, false)
     end
@@ -206,12 +202,15 @@ function _update()
             state = "gameover"
         end
 
-        -- Debug
-        --log.log("Mem: "..(stat(0)/2048.0).."% CPU: "..(stat(1)/1.0).."%")
+        -- UI
         log.log("streak: "..current_streak.. " (best: "..longest_streak..")")
+        log.log("time: "..flr(level_timer / stat(8)))
+
+        -- Debug log
+        -- log.log("Mem: "..(stat(0)/2048.0).."% CPU: "..(stat(1)/1.0).."%")
         -- log.log("fish: "..#fishes.." caught: "..(good_catch_count + bad_catch_count).." ("..good_catch_count.." vs. "..bad_catch_count..")")
         -- log.log("lures: "..#available_lures.." active: "..active_lure_index)
-        log.log("time: "..flr(level_timer / stat(8)))
+        -- log.log(fishes[1].str(fishes[1]))
     elseif state == "gameover" then
         scene = {}
         log.log("game over!")

@@ -281,11 +281,16 @@ game_obj = require('game_obj')
 renderer = require('renderer')
 v2 = require('v2')
 
+utils = require('utils')
+
 local fish = {
     mk = function(name, x, y, colour1, colour2, size)
         local f = game_obj.mk(name, 'fish', x, y)
-        f.target = nil
-        f.dir_to_lure = v2.norm(v2.mk(x + 1, y))
+        f.lure = nil
+        f.draw_target = false   -- Debug flag for drawing the target
+        f.target = game_obj.mk(name..'_trgt', 'go', 0, 0)
+        f.state = 'idle'
+        f.dir_to_target = v2.norm(v2.mk(x + 1, y))
         f.max_speed = 0.5 * (0.25 + rnd(1))
         f.speed = 0
         f.length = size
@@ -299,15 +304,20 @@ local fish = {
             f.max_speed *= 1.25
         end
 
+        local target_pos = utils.rnd_v2_near(f.x, f.y, 20, 20)
+        f.target.x = target_pos.x
+        f.target.y = target_pos.y
+        f.speed = f.max_speed * 0.3
+
         renderer.attach(f, 0)
         f.renderable.render = function(r, x, y)
             local go = r.game_obj
 
-            if go.lure_dist(go, go.target) < 0 then
+            if go.target_dist(go, go.target) < 0 then
                 -- Do nothing. This will get cleaned on the next update cycle.
                 return
             else
-                local tail = v2.mk(x - go.dir_to_lure.x * go.length, y - go.dir_to_lure.y * go.length)
+                local tail = v2.mk(x - go.dir_to_target.x * go.length, y - go.dir_to_target.y * go.length)
                 local head = v2.mk(x, y)
 
                 line(tail.x, tail.y, head.x, head.y, go.colour2)
@@ -317,53 +327,98 @@ local fish = {
                 else
                     circfill(tail.x, tail.y, max(1, go.size / 2.0), go.colour1)
                 end
+
+                if go.draw_target then
+                    circfill(go.target.x, go.target.y, 1, 15)
+                end
             end
         end
 
-        f.lure_dist = function(self, lure)
-            local d = lure.v2_pos(lure) - self.v2_pos(self)
+        f.target_dist = function(self, target)
+            local d = target.v2_pos(target) - self.v2_pos(self)
             return v2.mag(d)
         end
 
         f.interest = function(self)
-            matches = 0
-            if self.target == nil then
-                matches = 0
+            -- 0: wander
+            -- -1: avoid
+            -- 1: pursue
+            local interest = 0
+            if self.lure == nil then
+                interest = 0
             else
-                if self.target.colour == self.colour1 then
-                    matches += 1
-                elseif self.target.colour == self.colour2 then
-                    matches += 1
-                end
-                if self.size - self.target.size >= 0 and self.size - self.target.size <= 2 then
-                    matches += 1
+                local col1_match = self.lure.colour == self.colour1
+                local col2_match = self.lure.colour == self.colour2
+                local too_big = self.lure.size >= self.size
+                local too_small = self.size - self.lure.size > 2
+
+                if too_small then
+                    interest = 0
+                elseif too_big then
+                    if col1_match or col2_match then
+                        interest = 0
+                    else
+                        interest = -1
+                    end
+                else
+                    if col1_match and col2_match then
+                        interest = 2
+                    elseif col1_match or col2_match then
+                        interest = 1
+                    else
+                        interest = 0
+                    end
                 end
             end
-            return matches
+            return interest
         end
 
         f.update = function(self)
-            if self.target ~= nil then
-                local d = self.target.v2_pos(self.target) - self.v2_pos(self)
-                local dist = v2.mag(d)
-                self.dir_to_lure = v2.norm(d)
-
-                self.speed = self.max_speed
-                local interest = self.interest(self)
-                if interest == 0 then
-                    self.speed *= -1.0
-                elseif interest == 1 then
-                    self.speed *= 0.0
-                elseif interest == 2 then
-                    self.speed *= 0.6
-                elseif interest == 3 then
-                    self.speed *= 1.0
+            local interest = self.interest(self)
+            if self.state == 'idle' then
+                if interest ~= 0 then
+                    self.state = 'pursuit'
+                    self.target = self.lure
                 end
 
-                local new_pos = self.v2_pos(self) + self.dir_to_lure * self.speed
-                self.x = new_pos.x
-                self.y = new_pos.y
+                -- Pick new target on arrival at target
+                local has_collided = utils.circle_col(self.v2_pos(self), self.size / 2.0, self.target.v2_pos(self.target), 0)
+                if has_collided then
+                    local target_pos = utils.rnd_v2_near(self.x, self.y, 20, 20)
+                    self.target.x = target_pos.x
+                    self.target.y = target_pos.y
+                end
+
+            elseif self.state == 'pursuit' then
+                if interest == 0 then
+                    self.state = 'idle'
+
+                    local target_pos = utils.rnd_v2_near(self.x, self.y, 20, 20)
+                    self.target = game_obj.mk(name..'_trgt', 'go', target_pos.x, target_pos.y)
+                    self.speed = self.max_speed * 0.3
+                else
+                    self.speed = self.max_speed
+                    if interest < 0 then
+                        self.speed *= -1.0
+                    elseif interest > 1 then
+                        self.speed *= 1.0
+                    elseif interest > 0 then
+                        self.speed *= 0.6
+                    end
+                end
             end
+
+            local d = self.target.v2_pos(self.target) - self.v2_pos(self)
+            local dist = v2.mag(d)
+            self.dir_to_target = v2.norm(d)
+
+            local new_pos = self.v2_pos(self) + self.dir_to_target * self.speed
+            self.x = new_pos.x
+            self.y = new_pos.y
+        end
+
+        f.str = function(self)
+            return(self.name.." sp:"..self.speed.." st:"..self.state.." tg:"..v2.str(self.target.v2_pos(self.target)))
         end
 
         return f
@@ -371,6 +426,33 @@ local fish = {
 }
 
 return fish
+end
+package._c["utils"]=function()
+v2 = require('v2')
+
+local utils = {
+    rnd_v2_near = function(x, y, min_dist, zone_size)
+        local angle = rnd(1.0)
+        local dist = min_dist + flr(rnd(zone_size / 2.0))
+        local x = x + dist * cos(angle)
+        local y = y + dist * sin(angle)
+        return v2.mk(x, y)
+    end,
+
+    circle_col = function(p1, r1, p2, r2)
+        local dist = v2.mag(p2 - p1)
+        if dist < 0 then
+            -- Negative distance implies int overflow, so clearly the distance is farther than we can track.
+            return nil
+        elseif dist < (r1 + r2) then
+            return true
+        else
+            return false
+        end
+    end
+}
+
+return utils
 end
 package._c["lure"]=function()
 game_obj = require('game_obj')
@@ -414,6 +496,7 @@ v2 = require('v2')
 
 fish = require('fish')
 lure = require('lure')
+utils = require('utils')
 
 cam = nil
 
@@ -434,7 +517,7 @@ current_streak = nil
 scene = nil
 state = "ingame"
 
-function add_fish(target, colour1, colour2, size, is_offscreen)
+function add_fish(lure, colour1, colour2, size, is_offscreen)
     local min_dist = 40
     local zone_size = 128 - min_dist
 
@@ -443,13 +526,9 @@ function add_fish(target, colour1, colour2, size, is_offscreen)
         zone_size = 20
     end
 
-    local angle = rnd(1.0)
-    local dist = min_dist + flr(rnd(zone_size / 2.0))
-    local x = 64 + dist * cos(angle)
-    local y = 64 + dist * sin(angle)
-
-    local new_fish = fish.mk('f'..#fishes, x, y, colour1, colour2, size)
-    new_fish.target = target
+    local pos = utils.rnd_v2_near(64, 64, min_dist, zone_size)
+    local new_fish = fish.mk('f'..#fishes, pos.x, pos.y, colour1, colour2, size)
+    new_fish.lure = lure
     add(fishes, new_fish)
     add(scene, new_fish)
 end
@@ -483,7 +562,7 @@ function set_active_lure(lure)
     add(scene, active_lure)
 
     for f in all(fishes) do
-        f.target = active_lure
+        f.lure = active_lure
     end
 end
 
@@ -516,12 +595,11 @@ end
 
 function check_for_caught()
     for f in all(fishes) do
-        local lure_dist = f.lure_dist(f, active_lure)
-        if lure_dist < 0 then
-            -- Negative distance implies int overflow, so clearly the distance is too far anyway. Destroy the fish and replace with a new one.
+        local has_collided = utils.circle_col(f.v2_pos(f), f.size / 2.0, active_lure.v2_pos(active_lure), active_lure.size / 2.0)
+        if has_collided == nil then
             remove_fish(f)
             should_add_fish()
-        elseif lure_dist < active_lure.radius(active_lure) then
+        elseif has_collided then
             remove_fish(f)
 
             if f.colour1 == active_lure.colour then
@@ -543,7 +621,7 @@ function _init()
     state = "ingame"
     scene = {}
 
-    level_timer = 15 * stat(8) -- secs * target FPS
+    level_timer = 30 * stat(8) -- secs * target FPS
 
     cam = game_cam.mk("main-cam", 0, 0, 128, 128, 16, 16)
     add(scene, cam)
@@ -562,7 +640,7 @@ function _init()
     fishes = {}
 
     local fish_size = nil
-    for i = 1,4 do
+    for i = 1,3 do
         fish_size = 1 + flr(rnd(8))
         add_fish(active_lure, 7, 8, fish_size, false)
     end
@@ -614,12 +692,15 @@ function _update()
             state = "gameover"
         end
 
-        -- Debug
-        --log.log("Mem: "..(stat(0)/2048.0).."% CPU: "..(stat(1)/1.0).."%")
+        -- UI
         log.log("streak: "..current_streak.. " (best: "..longest_streak..")")
+        log.log("time: "..flr(level_timer / stat(8)))
+
+        -- Debug log
+        -- log.log("Mem: "..(stat(0)/2048.0).."% CPU: "..(stat(1)/1.0).."%")
         -- log.log("fish: "..#fishes.." caught: "..(good_catch_count + bad_catch_count).." ("..good_catch_count.." vs. "..bad_catch_count..")")
         -- log.log("lures: "..#available_lures.." active: "..active_lure_index)
-        log.log("time: "..flr(level_timer / stat(8)))
+        -- log.log(fishes[1].str(fishes[1]))
     elseif state == "gameover" then
         scene = {}
         log.log("game over!")
