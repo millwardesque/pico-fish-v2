@@ -46,8 +46,6 @@ local renderer = {
         r.render = function(self, x, y)
             -- Set the palette
             if (self.palette) then
-                log.syslog(self.game_obj.name..": "..log.tostring(self.palette))
-
                 -- Set colours
                 for i = 0, 15 do
                     pal(i, self.palette[i + 1])

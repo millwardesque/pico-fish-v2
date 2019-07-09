@@ -235,8 +235,6 @@ local renderer = {
         r.render = function(self, x, y)
             -- Set the palette
             if (self.palette) then
-                log.syslog(self.game_obj.name..": "..log.tostring(self.palette))
-
                 -- Set colours
                 for i = 0, 15 do
                     pal(i, self.palette[i + 1])
@@ -740,22 +738,8 @@ function _update()
         if level_timer == 0 then
             state = "gameover"
         end
-
-        -- UI
-        log.log("streak: "..current_streak.. " (best: "..longest_streak..")")
-        log.log("time: "..flr(level_timer / stat(8)))
-
-        -- Debug log
-        -- log.log("Mem: "..(stat(0)/2048.0).."% CPU: "..(stat(1)/1.0).."%")
-        -- log.log("fish: "..#fishes.." caught: "..(good_catch_count + bad_catch_count).." ("..good_catch_count.." vs. "..bad_catch_count..")")
-        -- log.log("lures: "..#available_lures.." active: "..active_lure_index)
-        -- log.log(fishes[1].str(fishes[1]))
     elseif state == "gameover" then
         scene = {}
-        log.log("game over!")
-        log.log("best streak: "..longest_streak)
-        log.log("press 4 to try again")
-
         if btnp(4) then
             _init()
         end
@@ -768,14 +752,25 @@ function _draw()
     background = nil
     renderer.render(cam, scene, background)
 
-    -- Lure selector
-    local lure_y = 40
-    for l in all(available_lures) do
-        if l == active_lure then
-            rect(4, lure_y - 1, 11, lure_y + 5 + 1, 10)
+    -- @DEBUG log.log("Mem: "..(stat(0)/2048.0).."% CPU: "..(stat(1)/1.0).."%")
+
+    if state == "ingame" then
+        -- Lure selector
+        local lure_y = 40
+        for l in all(available_lures) do
+            if l == active_lure then
+                rect(4, lure_y - 1, 11, lure_y + 5 + 1, 10)
+            end
+            rectfill(5, lure_y, 10, lure_y + 5, l.colour)
+            lure_y += 8
         end
-        rectfill(5, lure_y, 10, lure_y + 5, l.colour)
-        lure_y += 8
+
+        log.log("streak: "..current_streak.. " (best: "..longest_streak..")")
+        log.log("time: "..flr(level_timer / stat(8)))
+    elseif state == "gameover" then
+        log.log("game over!")
+        log.log("best streak: "..longest_streak)
+        log.log("press 4 to try again")
     end
 
     log.render()
