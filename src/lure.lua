@@ -12,7 +12,7 @@ local lure = {
         l.is_pulsing = false
 
         renderer.attach(l, 1)
-        l.renderable.palette = {0,1,2,3,4,dark_pal[l.colour],l.colour,7,8,9,10,11,12,13,14,15}
+        l.renderable.palette = {0,1,2,3,4,dark_pal[l.colour],dark_pal[l.colour],7,8,9,10,11,12,13,14,15}
 
         l.renderable.render = function(r, x, y)
             line(62, 0, x, y, 12)
@@ -24,13 +24,13 @@ local lure = {
             if self.is_pulsing then
                 self.pulse_timer -= 1
                 if self.pulse_timer == 0 then
-                    self.renderable.palette = {0,1,2,3,4,dark_pal[self.colour],self.colour,7,8,9,10,11,12,13,14,15}
+                    self.renderable.palette = {0,1,2,3,4,dark_pal[self.colour],dark_pal[self.colour],7,8,9,10,11,12,13,14,15}
                     self.is_pulsing = false
                 end
             else
                 self.pulse_timer += 1
                 if self.pulse_timer == self.pulse_wait then
-                    self.renderable.palette = {0,1,2,3,4,self.colour,self.colour,7,8,9,10,11,12,13,14,15}
+                    self.renderable.palette = {0,1,2,3,4,dark_pal[self.colour],self.colour,7,8,9,10,11,12,13,14,15}
                     self.is_pulsing = true
                 end
             end

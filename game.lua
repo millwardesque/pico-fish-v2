@@ -43,7 +43,7 @@ function add_fish(lure, colour1, colour2, size, is_offscreen)
     add(scene, new_fish)
 end
 
-function next_lure()
+function prev_lure()
     if active_lure_index == nil or active_lure_index == #available_lures then
         active_lure_index = 1
     elseif active_lure_index < #available_lures then
@@ -53,7 +53,7 @@ function next_lure()
     set_active_lure(available_lures[active_lure_index])
 end
 
-function prev_lure()
+function next_lure()
     if active_lure_index == nil or active_lure_index == 1 then
         active_lure_index = #available_lures
     elseif active_lure_index > 1 then
@@ -141,6 +141,7 @@ function _init()
     add(available_lures, lure.mk('lure-8', 64, 64, 8))
     add(available_lures, lure.mk('lure-11', 64, 64, 11))
     next_lure()
+    prev_lure()
 
     good_catch_count = 0
     bad_catch_count = 0
@@ -228,6 +229,16 @@ function _draw()
 
     background = nil
     renderer.render(cam, scene, background)
+
+    -- Lure selector
+    local lure_y = 40
+    for l in all(available_lures) do
+        if l == active_lure then
+            rect(4, lure_y - 1, 11, lure_y + 5 + 1, 10)
+        end
+        rectfill(5, lure_y, 10, lure_y + 5, l.colour)
+        lure_y += 8
+    end
 
     log.render()
 end
