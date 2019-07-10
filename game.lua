@@ -97,7 +97,7 @@ function should_add_fish()
             colour2 = 7
         end
 
-        local fish_size = 1 + flr(rnd(8))
+        local fish_size = 1 + flr(rnd(3))
 
         add_fish(active_lure, colour1, colour2, fish_size, true)
     end
@@ -152,17 +152,17 @@ function _init()
 
     local fish_size = nil
     for i = 1,3 do
-        fish_size = 1 + flr(rnd(8))
+        fish_size = 1 + flr(rnd(3))
         add_fish(active_lure, 7, 8, fish_size, false)
     end
 
     for i = 1,4 do
-        fish_size = 1 + flr(rnd(8))
+        fish_size = 1 + flr(rnd(3))
         add_fish(active_lure, 8, 11, fish_size, false)
     end
 
     for i = 1,4 do
-        fish_size = 1 + flr(rnd(8))
+        fish_size = 1 + flr(rnd(3))
         add_fish(active_lure, 11, 7, fish_size, false)
     end
 end
@@ -176,10 +176,10 @@ function _update()
         end
 
         if btnp(0) then
-            active_lure.size = max(1, active_lure.size - 1)
+            active_lure.set_size(active_lure, active_lure.size - 1)
         end
         if btnp(1) then
-            active_lure.size = min(10, active_lure.size + 1)
+            active_lure.set_size(active_lure, active_lure.size + 1)
         end
 
         if btnp(2) then

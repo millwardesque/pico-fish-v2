@@ -14,14 +14,14 @@ local fish = {
         f.dir_to_target = v2.norm(v2.mk(x + 1, y))
         f.max_speed = 0.5 * (0.25 + rnd(1))
         f.speed = 0
-        f.length = size
+        f.length = size * 2
         f.size = size
         f.colour1 = colour1
         f.colour2 = colour2
 
-        if f.size >= 7 then
+        if f.size == 3 then
             f.max_speed *= 0.75
-        elseif f.size < 3 then
+        elseif f.size == 1 then
             f.max_speed *= 1.25
         end
 
@@ -44,9 +44,9 @@ local fish = {
                 line(tail.x, tail.y, head.x, head.y, go.colour2)
 
                 if go.speed >= 0 then
-                    circfill(head.x, head.y, max(1, go.size / 2.0), go.colour1)
+                    circfill(head.x, head.y, max(1, go.size), go.colour1)
                 else
-                    circfill(tail.x, tail.y, max(1, go.size / 2.0), go.colour1)
+                    circfill(tail.x, tail.y, max(1, go.size), go.colour1)
                 end
 
                 if go.draw_target then
@@ -70,8 +70,8 @@ local fish = {
             else
                 local col1_match = self.lure.colour == self.colour1
                 local col2_match = self.lure.colour == self.colour2
-                local too_big = self.lure.size >= self.size
-                local too_small = self.size - self.lure.size > 2
+                local too_big = self.lure.size > self.size
+                local too_small = self.size - self.lure.size > 1
 
                 if too_small then
                     interest = 0
@@ -103,7 +103,7 @@ local fish = {
                 end
 
                 -- Pick new target on arrival at target
-                local has_collided = utils.circle_col(self.v2_pos(self), self.size / 2.0, self.target.v2_pos(self.target), 0)
+                local has_collided = utils.circle_col(self.v2_pos(self), self.size, self.target.v2_pos(self.target), 0)
                 if has_collided then
                     local target_pos = utils.rnd_v2_near(self.x, self.y, 20, 20)
                     self.target.x = target_pos.x

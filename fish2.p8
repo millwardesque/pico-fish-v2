@@ -318,14 +318,14 @@ local fish = {
         f.dir_to_target = v2.norm(v2.mk(x + 1, y))
         f.max_speed = 0.5 * (0.25 + rnd(1))
         f.speed = 0
-        f.length = size
+        f.length = size * 2
         f.size = size
         f.colour1 = colour1
         f.colour2 = colour2
 
-        if f.size >= 7 then
+        if f.size == 3 then
             f.max_speed *= 0.75
-        elseif f.size < 3 then
+        elseif f.size == 1 then
             f.max_speed *= 1.25
         end
 
@@ -348,9 +348,9 @@ local fish = {
                 line(tail.x, tail.y, head.x, head.y, go.colour2)
 
                 if go.speed >= 0 then
-                    circfill(head.x, head.y, max(1, go.size / 2.0), go.colour1)
+                    circfill(head.x, head.y, max(1, go.size), go.colour1)
                 else
-                    circfill(tail.x, tail.y, max(1, go.size / 2.0), go.colour1)
+                    circfill(tail.x, tail.y, max(1, go.size), go.colour1)
                 end
 
                 if go.draw_target then
@@ -374,8 +374,8 @@ local fish = {
             else
                 local col1_match = self.lure.colour == self.colour1
                 local col2_match = self.lure.colour == self.colour2
-                local too_big = self.lure.size >= self.size
-                local too_small = self.size - self.lure.size > 2
+                local too_big = self.lure.size > self.size
+                local too_small = self.size - self.lure.size > 1
 
                 if too_small then
                     interest = 0
@@ -407,7 +407,7 @@ local fish = {
                 end
 
                 -- Pick new target on arrival at target
-                local has_collided = utils.circle_col(self.v2_pos(self), self.size / 2.0, self.target.v2_pos(self.target), 0)
+                local has_collided = utils.circle_col(self.v2_pos(self), self.size, self.target.v2_pos(self.target), 0)
                 if has_collided then
                     local target_pos = utils.rnd_v2_near(self.x, self.y, 20, 20)
                     self.target.x = target_pos.x
@@ -492,14 +492,27 @@ local lure = {
         l.pulse_timer = 0
         l.pulse_wait = 30
         l.is_pulsing = false
+        l.sprites = {1, 2, 3}
 
         renderer.attach(l, 1)
         l.renderable.palette = {0,1,2,3,4,dark_pal[l.colour],dark_pal[l.colour],7,8,9,10,11,12,13,14,15}
 
         l.renderable.render = function(r, x, y)
-            line(62, 0, x, y, 12)
+            line(62, 0, x, y - 4, 12)
 
             r.default_render(r, x - 4, y - 4)
+        end
+
+        l.set_size = function(self, size)
+            if size <= 1 then
+                self.size = 1
+            elseif size >= 3 then
+                self.size = 3
+            else
+                self.size = size
+            end
+
+            self.renderable.sprite = self.sprites[self.size]
         end
 
         l.update = function(self)
@@ -519,7 +532,7 @@ local lure = {
         end
 
         l.radius = function(self)
-            return self.size / 2
+            return self.size
         end
 
         return l
@@ -633,7 +646,7 @@ function should_add_fish()
             colour2 = 7
         end
 
-        local fish_size = 1 + flr(rnd(8))
+        local fish_size = 1 + flr(rnd(3))
 
         add_fish(active_lure, colour1, colour2, fish_size, true)
     end
@@ -688,17 +701,17 @@ function _init()
 
     local fish_size = nil
     for i = 1,3 do
-        fish_size = 1 + flr(rnd(8))
+        fish_size = 1 + flr(rnd(3))
         add_fish(active_lure, 7, 8, fish_size, false)
     end
 
     for i = 1,4 do
-        fish_size = 1 + flr(rnd(8))
+        fish_size = 1 + flr(rnd(3))
         add_fish(active_lure, 8, 11, fish_size, false)
     end
 
     for i = 1,4 do
-        fish_size = 1 + flr(rnd(8))
+        fish_size = 1 + flr(rnd(3))
         add_fish(active_lure, 11, 7, fish_size, false)
     end
 end
@@ -712,10 +725,10 @@ function _update()
         end
 
         if btnp(0) then
-            active_lure.size = max(1, active_lure.size - 1)
+            active_lure.set_size(active_lure, active_lure.size - 1)
         end
         if btnp(1) then
-            active_lure.size = min(10, active_lure.size + 1)
+            active_lure.set_size(active_lure, active_lure.size + 1)
         end
 
         if btnp(2) then
@@ -776,14 +789,14 @@ function _draw()
     log.render()
 end
 __gfx__
-00000000000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000005560000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700006556000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000005656000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000605655060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700565565650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000056565500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000005005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000500000005000000056000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000500000005000000556000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700000600000006000000655600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000006560000065600000565600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000000600000056500060565506000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700006560000050500006556560000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000600000600060000600600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000006000060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 __gff__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

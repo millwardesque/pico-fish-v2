@@ -1,3 +1,5 @@
-Create levels and objectives?
+Create levels and objectives
+Fish sprites
+Water background
 
 # Bugs
