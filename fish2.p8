@@ -744,6 +744,8 @@ function next_level()
     for i = 1,active_level.init_fish do
         should_add_fish(false)
     end
+
+    state = "ingame"
 end
 
 function restart_level()
@@ -753,7 +755,6 @@ end
 
 function _init()
     log.debug = true
-    state = "ingame"
 
     active_level_index = 0
     next_level()
