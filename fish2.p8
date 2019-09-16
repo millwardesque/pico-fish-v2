@@ -304,19 +304,22 @@ end
 package._c["fish"]=function()
 game_obj = require('game_obj')
 renderer = require('renderer')
+log = require('log')
 v2 = require('v2')
 
 utils = require('utils')
 
+local base_fish_speed = 1
 local fish = {
     mk = function(name, x, y, colour1, colour2, size)
         local f = game_obj.mk(name, 'fish', x, y)
+
         f.lure = nil
         f.draw_target = false   -- Debug flag for drawing the target
         f.target = game_obj.mk(name..'_trgt', 'go', 0, 0)
         f.state = 'idle'
         f.dir_to_target = v2.norm(v2.mk(x + 1, y))
-        f.max_speed = 0.5 * (0.25 + rnd(1))
+        f.max_speed = base_fish_speed * (0.25 + rnd(1))
         f.speed = 0
         f.length = size * 2
         f.size = size
@@ -324,9 +327,9 @@ local fish = {
         f.colour2 = colour2
 
         if f.size == 3 then
-            f.max_speed *= 0.75
+            f.max_speed *= 0.8
         elseif f.size == 1 then
-            f.max_speed *= 1.25
+            f.max_speed *= 1.5
         end
 
         local target_pos = utils.rnd_v2_near(f.x, f.y, 20, 20)
@@ -479,6 +482,30 @@ local utils = {
 
 return utils
 end
+package._c["level"]=function()
+local level = {
+    mk = function(max_fish, init_fish, target_colour, target_count)
+        local l = {
+            max_fish = max_fish,
+            init_fish = init_fish,
+            target_colour = target_colour,
+            target_count = target_count,
+        }
+
+        l.is_good_catch = function(self, lure, fish)
+            if fish.colour1 == self.target_colour then
+                return true
+            else
+                return false
+            end
+        end
+
+        return l
+    end,
+}
+
+return level
+end
 package._c["lure"]=function()
 game_obj = require('game_obj')
 renderer = require('renderer')
@@ -554,6 +581,7 @@ renderer = require('renderer')
 v2 = require('v2')
 
 fish = require('fish')
+level = require('level')
 lure = require('lure')
 utils = require('utils')
 
@@ -572,6 +600,15 @@ good_catch_count = nil
 bad_catch_count = nil
 longest_streak = nil
 current_streak = nil
+
+active_level = nil
+active_level_index = nil
+levels = {
+    level.mk(20, 12, 11, 3),
+    level.mk(20, 12, 7, 4),
+    level.mk(20, 12, 8, 5),
+}
+
 
 scene = nil
 state = "ingame"
@@ -630,8 +667,8 @@ function remove_fish(fish)
     del(scene, fish)
 end
 
-function should_add_fish()
-    if max_fish > #fishes then
+function should_add_fish(add_offscreen)
+    if active_level.max_fish > #fishes then
         local i = flr(rnd(3))
         local colour1 = 0
         local colour2 = 1
@@ -648,7 +685,7 @@ function should_add_fish()
 
         local fish_size = 1 + flr(rnd(3))
 
-        add_fish(active_lure, colour1, colour2, fish_size, true)
+        add_fish(active_lure, colour1, colour2, fish_size, add_offscreen)
     end
 end
 
@@ -657,33 +694,38 @@ function check_for_caught()
         local has_collided = utils.circle_col(f.v2_pos(f), f.size / 2.0, active_lure.v2_pos(active_lure), active_lure.size / 2.0)
         if has_collided == nil then
             remove_fish(f)
-            should_add_fish()
+            should_add_fish(true)
         elseif has_collided then
             remove_fish(f)
 
-            if f.colour1 == active_lure.colour then
+            if active_level.is_good_catch(active_level, active_lure, f) then
                 good_catch_count += 1
                 current_streak +=1
                 if current_streak > longest_streak then
                     longest_streak = current_streak
                 end
+
+                if good_catch_count == active_level.target_count then
+                    next_level()
+                end
             else
                 bad_catch_count += 1
-                current_streak = 0
+                good_catch_count = 0
             end
         end
     end
 end
 
-function _init()
-    log.debug = true
-    state = "ingame"
-    scene = {}
+function next_level()
+    active_level_index = active_level_index + 1
+    active_level = levels[active_level_index]
 
-    level_timer = 30 * stat(8) -- secs * target FPS
+    scene = {}
 
     cam = game_cam.mk("main-cam", 0, 0, 128, 128, 16, 16)
     add(scene, cam)
+
+    level_timer = 45 * stat(8) -- secs * target FPS
 
     available_lures = {}
     add(available_lures, lure.mk('lure-7', 64, 64, 7))
@@ -699,21 +741,22 @@ function _init()
 
     fishes = {}
 
-    local fish_size = nil
-    for i = 1,3 do
-        fish_size = 1 + flr(rnd(3))
-        add_fish(active_lure, 7, 8, fish_size, false)
+    for i = 1,active_level.init_fish do
+        should_add_fish(false)
     end
+end
 
-    for i = 1,4 do
-        fish_size = 1 + flr(rnd(3))
-        add_fish(active_lure, 8, 11, fish_size, false)
-    end
+function restart_level()
+    active_level_index -= 1
+    next_level()
+end
 
-    for i = 1,4 do
-        fish_size = 1 + flr(rnd(3))
-        add_fish(active_lure, 11, 7, fish_size, false)
-    end
+function _init()
+    log.debug = true
+    state = "ingame"
+
+    active_level_index = 0
+    next_level()
 end
 
 function _update()
@@ -725,26 +768,26 @@ function _update()
         end
 
         if btnp(0) then
-            active_lure.set_size(active_lure, active_lure.size - 1)
-        end
-        if btnp(1) then
-            active_lure.set_size(active_lure, active_lure.size + 1)
-        end
-
-        if btnp(2) then
             next_lure()
         end
-        if btnp(3) then
+        if btnp(1) then
             prev_lure()
         end
 
+        if btnp(2) then
+            active_lure.set_size(active_lure, active_lure.size + 1)
+        end
+        if btnp(3) then
+            active_lure.set_size(active_lure, active_lure.size - 1)
+        end
+
         if btnp(4) then
-            _init()
+            restart_level()
         end
 
         check_for_caught()
 
-        should_add_fish()
+        should_add_fish(true)
 
         level_timer -= 1
 
@@ -754,7 +797,7 @@ function _update()
     elseif state == "gameover" then
         scene = {}
         if btnp(4) then
-            _init()
+            restart_level()
         end
     end
 end
@@ -765,24 +808,32 @@ function _draw()
     background = nil
     renderer.render(cam, scene, background)
 
-    -- @DEBUG log.log("Mem: "..(stat(0)/2048.0).."% CPU: "..(stat(1)/1.0).."%")
-
     if state == "ingame" then
         -- Lure selector
-        local lure_y = 40
+        local lure_x = 5
         for l in all(available_lures) do
             if l == active_lure then
-                rect(4, lure_y - 1, 11, lure_y + 5 + 1, 10)
+                rect(lure_x - 1, 128 - 11, lure_x + 5 + 1, 128 - 4, 10)
             end
-            rectfill(5, lure_y, 10, lure_y + 5, l.colour)
-            lure_y += 8
+            rectfill(lure_x, 128 - 10, lure_x + 5, 128 - 5, l.colour)
+            lure_x += 8
         end
 
-        log.log("streak: "..current_streak.. " (best: "..longest_streak..")")
-        log.log("time: "..flr(level_timer / stat(8)))
+        color(active_level.target_colour)
+        print("score: "..good_catch_count.. " / "..active_level.target_count, 5, 5)
+
+        color(7)
+        print("time: "..flr(level_timer / stat(8)), 5, 13)
+
+        -- @HACK Log an empty message so the logger doesn't print over top of the UI
+        log.log()
+        log.log()
+
+        -- @DEBUG log.log("Mem: "..(stat(0)/2048.0).."% CPU: "..(stat(1)/1.0).."%")
     elseif state == "gameover" then
+        color(7)
         log.log("game over!")
-        log.log("best streak: "..longest_streak)
+        log.log("score: "..good_catch_count.." / "..active_level.target_count)
         log.log("press 4 to try again")
     end
 

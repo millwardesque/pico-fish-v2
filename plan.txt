@@ -1,4 +1,5 @@
-Create levels and objectives
+Make sure there's enough fish onscreen to complete objective
+'Level complete' screen
 Fish sprites
 Water background
 

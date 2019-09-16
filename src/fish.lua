@@ -1,18 +1,21 @@
 game_obj = require('game_obj')
 renderer = require('renderer')
+log = require('log')
 v2 = require('v2')
 
 utils = require('utils')
 
+local base_fish_speed = 1
 local fish = {
     mk = function(name, x, y, colour1, colour2, size)
         local f = game_obj.mk(name, 'fish', x, y)
+
         f.lure = nil
         f.draw_target = false   -- Debug flag for drawing the target
         f.target = game_obj.mk(name..'_trgt', 'go', 0, 0)
         f.state = 'idle'
         f.dir_to_target = v2.norm(v2.mk(x + 1, y))
-        f.max_speed = 0.5 * (0.25 + rnd(1))
+        f.max_speed = base_fish_speed * (0.25 + rnd(1))
         f.speed = 0
         f.length = size * 2
         f.size = size
@@ -20,9 +23,9 @@ local fish = {
         f.colour2 = colour2
 
         if f.size == 3 then
-            f.max_speed *= 0.75
+            f.max_speed *= 0.8
         elseif f.size == 1 then
-            f.max_speed *= 1.25
+            f.max_speed *= 1.5
         end
 
         local target_pos = utils.rnd_v2_near(f.x, f.y, 20, 20)
