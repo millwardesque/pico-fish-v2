@@ -1,6 +1,6 @@
 Make sure there's enough fish onscreen to complete objective
-'Level complete' screen
 Fish sprites
 Water background
 
 # Bugs
+First size change goes to max size

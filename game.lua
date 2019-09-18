@@ -16,6 +16,8 @@ level_timer = nil
 fishes = nil
 max_fish = 10
 
+secs_per_level = 10
+
 active_lure = nil
 active_lure_index = nil
 available_lures = nil
@@ -28,10 +30,11 @@ current_streak = nil
 active_level = nil
 active_level_index = nil
 levels = {
-    level.mk(20, 12, 11, 3),
-    level.mk(20, 12, 7, 4),
-    level.mk(20, 12, 8, 5),
+    level.mk(20, 12, 11, 1),
+    level.mk(20, 12, 7, 2),
+    level.mk(20, 12, 8, 3),
 }
+levels_completed = 0
 
 
 scene = nil
@@ -130,7 +133,8 @@ function check_for_caught()
                 end
 
                 if good_catch_count == active_level.target_count then
-                    next_level()
+                    state = "complete"
+                    levels_completed += 1
                 end
             else
                 bad_catch_count += 1
@@ -141,7 +145,7 @@ function check_for_caught()
 end
 
 function next_level()
-    active_level_index = active_level_index + 1
+    active_level_index = (active_level_index % #levels) + 1
     active_level = levels[active_level_index]
 
     scene = {}
@@ -149,7 +153,7 @@ function next_level()
     cam = game_cam.mk("main-cam", 0, 0, 128, 128, 16, 16)
     add(scene, cam)
 
-    level_timer = 45 * stat(8) -- secs * target FPS
+    level_timer = secs_per_level * stat(8) -- secs * target FPS
 
     available_lures = {}
     add(available_lures, lure.mk('lure-7', 64, 64, 7))
@@ -177,11 +181,16 @@ function restart_level()
     next_level()
 end
 
+function reset_game()
+    active_level_index = 0
+    levels_completed = 0
+    next_level()
+end
+
 function _init()
     log.debug = true
 
-    active_level_index = 0
-    next_level()
+    reset_game()
 end
 
 function _update()
@@ -219,10 +228,15 @@ function _update()
         if level_timer == 0 then
             state = "gameover"
         end
+    elseif state == "complete" then
+        scene = {}
+        if btnp(4) then
+            next_level()
+        end
     elseif state == "gameover" then
         scene = {}
         if btnp(4) then
-            restart_level()
+            reset_game()
         end
     end
 end
@@ -245,7 +259,7 @@ function _draw()
         end
 
         color(active_level.target_colour)
-        print("score: "..good_catch_count.. " / "..active_level.target_count, 5, 5)
+        print("level: "..(levels_completed + 1).." score: "..good_catch_count.. " / "..active_level.target_count, 5, 5)
 
         color(7)
         print("time: "..flr(level_timer / stat(8)), 5, 13)
@@ -255,10 +269,15 @@ function _draw()
         log.log()
 
         -- @DEBUG log.log("Mem: "..(stat(0)/2048.0).."% CPU: "..(stat(1)/1.0).."%")
+    elseif state == "complete" then
+        color(7)
+        log.log("level complete!")
+        log.log("press 4 for next level")
     elseif state == "gameover" then
         color(7)
         log.log("game over!")
-        log.log("score: "..good_catch_count.." / "..active_level.target_count)
+        log.log("level score: "..good_catch_count.." / "..active_level.target_count)
+        log.log("levels completed: "..levels_completed)
         log.log("press 4 to try again")
     end
 
