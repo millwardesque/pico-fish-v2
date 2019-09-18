@@ -514,7 +514,7 @@ local dark_pal = {[0]=0,0,1,1,2,1,5,6,2,4,9,3,1,1,2,5}
 local lure = {
     mk = function(name, x, y, colour)
         local l = game_obj.mk(name, 'lure', x, y)
-        l.size = 5
+        l.size = nil
         l.colour = colour
         l.pulse_timer = 0
         l.pulse_wait = 30
@@ -562,6 +562,8 @@ local lure = {
             return self.size
         end
 
+
+        l.set_size(l, 1)
         return l
     end,
 }

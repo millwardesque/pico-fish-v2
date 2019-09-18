@@ -3,4 +3,3 @@ Fish sprites
 Water background
 
 # Bugs
-First size change goes to max size
