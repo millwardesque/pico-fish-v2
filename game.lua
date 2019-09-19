@@ -36,6 +36,7 @@ levels = {
 }
 levels_completed = 0
 
+background = {x = 0, y = 0, w = 16, h = 16}
 
 scene = nil
 state = "ingame"
@@ -244,7 +245,6 @@ end
 function _draw()
     cls(1)
 
-    background = nil
     renderer.render(cam, scene, background)
 
     if state == "ingame" then

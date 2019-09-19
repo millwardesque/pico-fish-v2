@@ -1,5 +1,6 @@
+Improve visual accuracy of fish-to-lure collisions
+Constrain fish to water background
 Make sure there's enough fish onscreen to complete objective
-Fish sprites
-Water background
+Add 45-degree fish
 
 # Bugs

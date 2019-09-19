@@ -6,6 +6,7 @@ v2 = require('v2')
 utils = require('utils')
 
 local base_fish_speed = 1
+
 local fish = {
     mk = function(name, x, y, colour1, colour2, size)
         local f = game_obj.mk(name, 'fish', x, y)
@@ -22,6 +23,9 @@ local fish = {
         f.colour1 = colour1
         f.colour2 = colour2
 
+        f.x_sprite = 16
+        f.y_sprite = 32
+
         if f.size == 3 then
             f.max_speed *= 0.8
         elseif f.size == 1 then
@@ -33,30 +37,32 @@ local fish = {
         f.target.y = target_pos.y
         f.speed = f.max_speed * 0.3
 
-        renderer.attach(f, 0)
-        f.renderable.render = function(r, x, y)
-            local go = r.game_obj
+        renderer.attach(f, 16)
+        -- f.renderable.render = function(r, x, y)
+        --     local go = r.game_obj
 
-            if go.target_dist(go, go.target) < 0 then
-                -- Do nothing. This will get cleaned on the next update cycle.
-                return
-            else
-                local tail = v2.mk(x - go.dir_to_target.x * go.length, y - go.dir_to_target.y * go.length)
-                local head = v2.mk(x, y)
+        --     if go.target_dist(go, go.target) < 0 then
+        --         -- Do nothing. This will get cleaned on the next update cycle.
+        --         return
+        --     else
+        --         local tail = v2.mk(x - go.dir_to_target.x * go.length, y - go.dir_to_target.y * go.length)
+        --         local head = v2.mk(x, y)
 
-                line(tail.x, tail.y, head.x, head.y, go.colour2)
+        --         line(tail.x, tail.y, head.x, head.y, go.colour2)
 
-                if go.speed >= 0 then
-                    circfill(head.x, head.y, max(1, go.size), go.colour1)
-                else
-                    circfill(tail.x, tail.y, max(1, go.size), go.colour1)
-                end
+        --         if go.speed >= 0 then
+        --             circfill(head.x, head.y, max(1, go.size), go.colour1)
+        --         else
+        --             circfill(tail.x, tail.y, max(1, go.size), go.colour1)
+        --         end
 
-                if go.draw_target then
-                    circfill(go.target.x, go.target.y, 1, 15)
-                end
-            end
-        end
+        --         if go.draw_target then
+        --             circfill(go.target.x, go.target.y, 1, 15)
+        --         end
+        --     end
+        -- end
+
+        f.renderable.palette = {0,1,2,3,4,f.colour2,f.colour1,7,8,9,10,11,12,13,14,15}
 
         f.target_dist = function(self, target)
             local d = target.v2_pos(target) - self.v2_pos(self)
@@ -139,6 +145,26 @@ local fish = {
             local new_pos = self.v2_pos(self) + self.dir_to_target * self.speed
             self.x = new_pos.x
             self.y = new_pos.y
+
+            -- Choose sprite based on direction
+            if abs(self.dir_to_target.x) > abs(self.dir_to_target.y) then
+                self.renderable.sprite = self.x_sprite + self.size - 1
+            else
+                self.renderable.sprite = self.y_sprite + self.size - 1
+            end
+
+            -- Sprite flipping based on direction.
+            if self.dir_to_target.x < 0 then
+                self.renderable.flip_x = true
+            else
+                self.renderable.flip_x = false
+            end
+
+            if self.dir_to_target.y < 0 then
+                self.renderable.flip_y = false
+            else
+                self.renderable.flip_y = true
+            end
         end
 
         f.str = function(self)
